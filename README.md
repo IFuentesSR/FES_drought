@@ -1,2 +1,2 @@
-# JoH_drought
-Code associated with Journal of Hydrology manuscript
+# FES_drought
+Code associated with Frontiers in Environmental Sciences manuscript
