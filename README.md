@@ -14,7 +14,7 @@ The Scripts correspond to colab notebooks which require the use of Google Earth 
   <img src="fig5.png" alt="time_series" width="500">
 </p>
 
-These can be calculated from hydrometeorological gridded data stored in GEE, including CHIRPS for rainfall, a combination of variables to calculate evapotranspiration from ERA5 and FLDAS, NDVI from AVHRR and MODIS, and runoff from ERA5. However, other datasets can also be used.
+These can be calculated from hydrometeorological gridded data stored in GEE, including CHIRPS for rainfall, a combination of variables to calculate evapotranspiration from ERA5 and FLDAS, NDVI from AVHRR and MODIS, and runoff from ERA5. However, other datasets can also be used. Trends and average drought characteristic functions can be found in the gamma distribution file, and may be applied to other distribution/indices after slight modifications. 
 
 <p align="center">
   <img src="fig3.png" alt="average" width="500">
