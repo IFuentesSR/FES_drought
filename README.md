@@ -11,19 +11,19 @@ Code associated with the publication entitled [Spatial and Temporal Global Patte
 The Scripts correspond to colab notebooks which require the use of Google Earth Engine (GEE), and they allow to get standardised drought indices using the gamma and log-logistic distibutions for rainfall and rainfal minus evapotranspiration, the z-scores for vegetation, and empirical probabilities based on the Gringorten plotting position for runoff. 
 
 <p align="center">
-  <img src="fig5.png" alt="time_series" width="300">
+  <img src="fig5.png" alt="time_series" width="500">
 </p>
 
 These can be calculated from hydrometeorological gridded data stored in GEE, including CHIRPS for rainfall, a combination of variables to calculate evapotranspiration from ERA5 and FLDAS, NDVI from AVHRR and MODIS, and runoff from ERA5. However, other datasets can also be used.
 
 <p align="center">
-  <img src="fig3.png" alt="average" width="300">
+  <img src="fig3.png" alt="average" width="500">
 </p>
 
 Additionally, a python file for cross-correlation using prewhitened data with ARIMA was also included.
 
 <p align="center">
-  <img src="fig11.png" alt="heatmap" width="300">
+  <img src="fig11.png" alt="heatmap" width="500">
 </p>
 
 ## How to cite this work?
