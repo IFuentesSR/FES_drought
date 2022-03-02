@@ -6,9 +6,8 @@ import pandas as pd
 import numpy as np
 from pmdarima.arima import auto_arima
 import warnings
-import sys
 
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 
 def save_raster(input, array, output_file):
@@ -56,76 +55,41 @@ def save_raster(input, array, output_file):
     #  Close output raster dataset
 
     dst_ds = None
+    
+
+def cc(x, y, maxlags):
+    correls = np.correlate(x, y, mode='full')
+    correls /= np.sqrt(np.dot(x, x) * np.dot(y, y))
+    lags = np.arange(-maxlags, maxlags + 1)
+    correls = correls[len(x) - 1 - maxlags:len(x) + maxlags]
+    return correls, lags
 
 
 def crossCorrelation(array):
     limit = int(array.shape[0]/2)
     ind = array[:limit]
     dep = array[limit:]
-    nans = np.isnan(ind) | np.isnan(dep)
+    nans = np.isnull(ind) | np.isnull(dep)
     ind = ind[~nans]
     dep = dep[~nans]
-    try:
-        saved = auto_arima(ind, start_p=0, start_q=0, n_fits=50)
-        order_i = saved.order[1]
-        x_new = saved.resid()
-        y_new = saved.fit(dep).resid()
-        df = pd.DataFrame(data={'spei': x_new, 'svi': y_new})
-        sign, cc = [], []
-        for n in np.arange(0, 20, 1):
-            dfc = df.copy()
-            dfc['spei{}'.format(n)] = dfc['spei'].shift(n)
-            dfsub = dfc[['svi', 'spei{}'.format(n)]]
-            dfsub.dropna(how='any', inplace=True)
-            correlation = np.corrcoef(dfsub['svi'], dfsub['spei{}'.format(n)])
-            cc.append(correlation[0][1])
-            sign.append(np.abs(correlation[0][1]) >
-                        2/(len(dfc['svi']) - np.abs(n))**0.5)
-        ix, corr = np.argmax(np.array(cc)), np.max(np.array(cc))
-        sig = sign[np.argmax(np.array(cc))]
-        return order_i, ix, corr, sig
-    except (ValueError, np.linalg.LinAlgError):
-        order_i, ix, corr, sig = np.nan, np.nan, np.nan, np.nan
-        return order_i, ix, corr, sig
+    if len(dep) == 0:
+        order_i, ix, corr = -999, -999, -999
+        return order_i, ix, corr, 0
+    else:
+        try:
+            saved = auto_arima(ind, start_p=0, start_q=0, n_fits=50)
+            order_i = saved.order[1]
+            x_new = saved.resid()
+            y_new = saved.fit(dep).resid()
+            df = pd.DataFrame(data={'spei': x_new, 'svi': y_new})
+            corrs, lgs = cc(df['spei'], df['svi'], 48)
+            corrs, lgs = corrs[48:], lgs[48:]
+            ix_corr = np.argmax(corrs)
+            corr = corrs[ix_corr]
+            ix = lgs[ix_corr]
+            sig = np.abs(corr) > 2/(len(df['svi']) - np.abs(ix))**0.5
+            return order_i, ix, corr, int(sig)
+        except (ValueError, np.linalg.LinAlgError):
+            order_i, ix, corr, sig = -999, -999, -999, 0
+            return order_i, ix, corr, int(sig)
 
-
-def unpacking_apply_along_axis(chunksss):
-    return np.apply_along_axis(chunksss[0], chunksss[1], chunksss[2])
-
-
-def parallel_apply_along_axis(func1d, axis, arr):
-    """
-    Like numpy.apply_along_axis(), but takes advantage of multiple
-    cores.
-    """
-    # Effective axis where apply_along_axis() will be applied by each
-    # worker (any non-zero axis number would work, so as to allow the use
-    # of `np.array_split()`, which is only done on axis 0):
-    effective_axis = 1 if axis == 0 else axis
-    if effective_axis != axis:
-        arr = arr.swapaxes(axis, effective_axis).swapaxes(effective_axis,
-                                                          effective_axis+1)
-
-    # Chunks for the mapping (only a few chunks):
-    chunks = [(func1d, effective_axis+1, sub_arr)
-              for sub_arr in np.array_split(arr, multiprocessing.cpu_count())]
-
-    pool = multiprocessing.Pool()
-    individual_results = pool.map(unpacking_apply_along_axis, chunks)
-    # Freeing the workers:
-    pool.close()
-    pool.join()
-    merged = np.concatenate(individual_results)
-    return merged
-
-
-raster = str(sys.argv[1])
-print(raster)
-data = gdal.Open(raster)
-data_array = data.ReadAsArray()
-
-results = parallel_apply_along_axis(crossCorrelation, 0, data_array)
-save_raster(raster, results[:, :, 0], '{}_int.tif'.format(raster[:-4]))
-save_raster(raster, results[:, :, 1], '{}_lag.tif'.format(raster[:-4]))
-save_raster(raster, results[:, :, 2], '{}_corr.tif'.format(raster[:-4]))
-save_raster(raster, results[:, :, 3], '{}_sig.tif'.format(raster[:-4]))
